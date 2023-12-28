@@ -154,3 +154,29 @@ kubectl get pvc
 kubectl get pv
 kubectl get pods -l app=mysql
 ```
+
+We can then go to the AWS Console and validate a new volume was created and associated with our cluster. 
+
+<p align="center">
+<img width="450" alt="image" src="https://github.com/gabrrodriguez/deloitte_SRE_repo/assets/126508932/0e0ed322-2f4f-4a9f-a2a9-0fc2eeb04d57">
+</p> 
+
+Sign in to the MYSQL pod
+
+```s
+kubectl run -it --rm --image=mysql:5.6 --restart=Never mysql-client -- mysql -h mysql -pdbpassword11
+```
+
+At SQL prompt, execute the following commands: 
+
+```s
+SHOW DATABASES;
+USE usermgmt;
+SHOW TABLES; 
+SELECT * FROM users;
+```
+
+<p align="center">
+<img width="450" alt="image" src="https://github.com/gabrrodriguez/deloitte_SRE_repo/assets/126508932/9b69ed2b-2cea-42f3-92a9-666a339ad343">
+</p>
+
