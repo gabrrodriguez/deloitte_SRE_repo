@@ -1,8 +1,8 @@
 # Creating Persistent Storage for K8 images: Elastic Block Store (EBS)
 
 ## Steps: 
-[1. Install Container Storage Interface (CSI) Driver on K8 Cluster]()
-[2. Configure the manifests for *StorageClass*, *PVC*, & *ConfigMap*]()
+[1. Install Container Storage Interface (CSI) Driver on K8 Cluster](https://github.com/gabrrodriguez/deloitte_SRE_repo/tree/main/AWS/EKS/4-EKSVolumes#install-container-storage-interface-csi-driver-on-k8-cluster)
+[2. Configure the manifests for *StorageClass*, *PVC*, & *ConfigMap*](https://github.com/gabrrodriguez/deloitte_SRE_repo/tree/main/AWS/EKS/4-EKSVolumes#configure-the-manifests-for-storageclass-pvc--configmap)
 
 
 
