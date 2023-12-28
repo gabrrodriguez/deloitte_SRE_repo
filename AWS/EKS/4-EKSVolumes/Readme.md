@@ -139,4 +139,18 @@ Here we will create a series of K8 Objects to support a MySQL pod that requires 
 | Deployment, ENVVars, Volumes, VolumeMounts | msql-deployment.yml    |
 | ClusterIP Service                          | mysql-clusterip.yml    |
 
-1. 
+1. Now if we run the manifests with kubectl we can see the Objects get created
+
+```s
+cd 4-EKSVolumes
+kubectl apply -f .
+```
+
+2. Now we can validate what objects were creaeted: 
+
+```s
+kubectl get all
+kubectl get pvc
+kubectl get pv
+kubectl get pods -l app=mysql
+```
