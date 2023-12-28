@@ -43,14 +43,9 @@
 
 So if the above is the "standard" Kubernetes architecture, what if any, changes are there to the EKS architecture? How does the EKS service accomodate this k8 architecture? 
 
-| K8    | EKS |
-| -------- | ------- |
-| <p align="center">
-<img width="250" alt="image" src="https://github.com/gabrrodriguez/deloitte_SRE_repo/assets/126508932/56736b17-7bea-4664-b843-03046cb8c34e">
-</p>
-  | <p align="center">
-<img width="250" alt="image" src="https://github.com/gabrrodriguez/deloitte_SRE_repo/assets/126508932/ac3d8eaa-5568-46b5-8455-b17aa57a97c6">
-</p>    |
+<p align="center">
+<img width="450" alt="image" src="https://github.com/gabrrodriguez/deloitte_SRE_repo/assets/126508932/ac3d8eaa-5568-46b5-8455-b17aa57a97c6">
+</p> 
 
 None of these aspects are ours to maange. AWS EKS will manage the control plane and the scaling of the worker nodes. 
 
