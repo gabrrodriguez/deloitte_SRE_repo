@@ -5,9 +5,9 @@
 
 2. [Configure the manifests for *StorageClass*, *PVC*, & *ConfigMap*](https://github.com/gabrrodriguez/deloitte_SRE_repo/tree/main/AWS/EKS/4-EKSVolumes#configure-the-manifests-for-storageclass-pvc--configmap)
 
+----------
 
-## Install Container Storage Interface (CSI) Driver on K8 Cluster
-<small>[AWS Documentation: CSI Driver](https://docs.aws.amazon.com/eks/latest/userguide/ebs-csi.html)</small>
+## Install Container Storage Interface (CSI) Driver on K8 Cluster [AWS Documentation: CSI Driver](https://docs.aws.amazon.com/eks/latest/userguide/ebs-csi.html)
 
 ### 1. Create an IAM Policy
 
