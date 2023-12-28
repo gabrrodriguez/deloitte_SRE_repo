@@ -7,7 +7,7 @@
 
 ----------
 
-## Install Container Storage Interface (CSI) Driver on K8 Cluster <sup>[AWS Documentation: CSI Driver](https://docs.aws.amazon.com/eks/latest/userguide/ebs-csi.html)</sup>
+## Install Container Storage Interface (CSI) Driver on K8 Cluster <sub>[AWS Documentation: CSI Driver](https://docs.aws.amazon.com/eks/latest/userguide/ebs-csi.html)</sub>
 
 ### 1. Create an IAM Policy
 
