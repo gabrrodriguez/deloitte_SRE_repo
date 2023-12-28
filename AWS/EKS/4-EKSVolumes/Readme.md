@@ -131,12 +131,12 @@ Should result in something that looks like this
 
 Here we will create a series of K8 Objects to support a MySQL pod that requires persistent storage. In total we will create 5 K8 Manifests: 
 
-| Kubernetes Object | K8 Manifest       |
-| ----------------- | ----------------- |
-| Storage Class     | storage-class.yml |
-| Storage Class     | storage-class.yml |
-| Storage Class     | storage-class.yml |
-| Storage Class     | storage-class.yml |
-| Storage Class     | storage-class.yml |
+| Kubernetes Object                          | K8 Manifest            |
+| ------------------------------------------ | ---------------------- |
+| Storage Class                              | storage-class.yml      |
+| PersistenVolumeClaim                       | pvc.yml                |
+| ConfigMap                                  | usermgmt-configmap.yml |
+| Deployment, ENVVars, Volumes, VolumeMounts | msql-deployment.yml    |
+| ClusterIP Service                          | mysql-clusterip.yml    |
 
 1. 
