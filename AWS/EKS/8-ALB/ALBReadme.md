@@ -141,14 +141,254 @@ kubectl get nodes
 2. EKS Cluster
 ```
 
+------------
 
+#### 4 - Create IAM Policy
 
+4a. Create IAM policy for the AWS Load Balancer Controller that allows it to make calls to AWS APIs on your behalf. As on today 2.3.1 is the latest Load Balancer Controller. We will download always latest from main branch of Git Repo [aws-load-balancer-controller](https://github.com/kubernetes-sigs/aws-load-balancer-controller). 
 
+4b. Go to relevant directory and ensure that we don't have any config files
+```s
+# Change Directroy
+cd 08-NEW-ELB-Application-LoadBalancers/
+cd 08-01-Load-Balancer-Controller-Install
 
-1. Create IAM Policy and make a note of Policy ARN
-2. Create IAM Role and k8s Service Account and bound them together
-3. Install AWS Load Balancer Controller using HELM3 CLI
-4. Understand IngressClass Concept and create a default Ingress Class
+# Delete files before download (if any present)
+rm iam_policy_latest.json
+```
 
+4c. Download sample IAM policies
 
-## Process 
+```s
+# Download IAM Policy
+## Download latest
+curl -o iam_policy_latest.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/main/docs/install/iam_policy.json
+## Verify latest
+ls -lrta 
+
+## Download specific version
+curl -o iam_policy_v2.3.1.json https://raw.githubusercontent.com/kubernetes-sigs/aws-load-balancer-controller/v2.3.1/docs/install/iam_policy.json
+```
+
+4d. Use the files downloaded to create the necessary policy for your eksdemo1 cluster. Note the of the Policy ARN. 
+
+```s
+# Create IAM Policy using policy downloaded 
+aws iam create-policy \
+    --policy-name AWSLoadBalancerControllerIAMPolicy \
+    --policy-document file://iam_policy_latest.json
+```
+
+> NOTE: In this process, there is a high potential that there may be an error that needs resoluton. 
+```s
+gabrrodriguez@US-NF9V9G1605 8-ALB % aws iam create-policy \
+    --policy-name AWSLoadBalancerControllerIAMPolicy \
+    --policy-document file://iam_policy_latest.json
+
+An error occurred (InvalidClientTokenId) when calling the CreatePolicy operation: The security token included in the request is invalid.
+```
+
+There have been changes in ELB v2 from other versions so, this error may not be applicable as you see, if you attempt to provide the profile with the relevant key to disposition the error you can see that the previous attempt did work. 
+
+```s
+gabrrodriguez@US-NF9V9G1605 8-ALB % export AWS_PROFILE="rodriggj"
+gabrrodriguez@US-NF9V9G1605 8-ALB % aws iam create-policy \      
+    --policy-name AWSLoadBalancerControllerIAMPolicy \
+    --policy-document file://iam_policy_latest.json
+
+An error occurred (EntityAlreadyExists) when calling the CreatePolicy operation: A policy called AWSLoadBalancerControllerIAMPolicy already exists. Duplicate names are not allowed.
+```
+
+So the intial error was incorrect. You can validate this by going to the IAM Console and seeing if there was in fact a policy created called `AWSLoadBalancerControllerIAMPolicy`, 
+
+4e. Create an IAM Role for the `AWS Load Balancer Controller` and attach the role to the K8 service account. 
+
+```
+# Verify if any existing service account
+kubectl get sa -n kube-system
+kubectl get sa aws-load-balancer-controller -n kube-system
+```
+
+> NOTE: Nothing with the name `aws-load-balancer-controller` should exist
+
+```s
+# Run the following command having input name, cluster and policy arn
+eksctl create iamserviceaccount \
+  --cluster=eksdemo1 \
+  --namespace=kube-system \
+  --name=aws-load-balancer-controller \
+  --attach-policy-arn=arn:aws:iam::551061066810:policy/AWSLoadBalancerControllerIAMPolicy \
+  --override-existing-serviceaccounts \
+  --approve
+```
+
+You should see sample output similar to the following:
+
+```s
+2024-01-17 11:09:05 [ℹ]  1 iamserviceaccount (kube-system/aws-load-balancer-controller) was included (based on the include/exclude rules)
+2024-01-17 11:09:05 [!]  metadata of serviceaccounts that exist in Kubernetes will be updated, as --override-existing-serviceaccounts was set
+2024-01-17 11:09:05 [ℹ]  1 task: { 
+    2 sequential sub-tasks: { 
+        create IAM role for serviceaccount "kube-system/aws-load-balancer-controller",
+        create serviceaccount "kube-system/aws-load-balancer-controller",
+    } }2024-01-17 11:09:05 [ℹ]  building iamserviceaccount stack "eksctl-eksdemo1-addon-iamserviceaccount-kube-system-aws-load-balancer-controller"
+2024-01-17 11:09:06 [ℹ]  deploying stack "eksctl-eksdemo1-addon-iamserviceaccount-kube-system-aws-load-balancer-controller"
+2024-01-17 11:09:06 [ℹ]  waiting for CloudFormation stack "eksctl-eksdemo1-addon-iamserviceaccount-kube-system-aws-load-balancer-controller"
+2024-01-17 11:09:37 [ℹ]  waiting for CloudFormation stack "eksctl-eksdemo1-addon-iamserviceaccount-kube-system-aws-load-balancer-controller"
+2024-01-17 11:09:38 [ℹ]  created serviceaccount "kube-system/aws-load-balancer-controller"
+```
+
+You can verify creation and association with the `ekscli`
+
+```s
+eksctl get iamserviceaccount --cluster eksdemo1
+```
+
+Final verification should be to verify with Cloudformation 
+- Goto Services -> CloudFormation 
+- CFN Template Name: eksctl-eksdemo1-addon-iamserviceaccount-kube-system-aws-load-balancer-controller
+- Click on Resources tab
+- Click on link in Physical Id to open the IAM Role
+- Verify it has eksctl-eksdemo1-addon-iamserviceaccount-kube-Role1-WFAWGQKTAVLR associated
+
+4f. Verify k8s Service Account using `kubectl`
+```s
+kubectl get sa -n kube-system
+kubectl get sa aws-load-balancer-controller -n kube-system
+kubectl describe sa aws-load-balancer-controller -n kube-system
+```
+
+-------
+
+#### 5. Install the AWS Load Balancer Controller using Helm V3
+
+5a. Install `helm`
+
+```s
+# Install Helm (if not installed) MacOS
+brew install helm
+
+# Verify Helm version
+helm version
+```
+
+5b. Install AWS Load Balancer Controller
+
+5b 1: 
+```s
+# Add the eks-charts repository.
+helm repo add eks https://aws.github.io/eks-charts
+
+# Update your local repo to make sure that you have the most recent charts.
+helm repo update
+```
+
+5b 2: To run the next command you will need to gather the 1. `eksCluster Name`, 2. `regionCode`, 3. `vpcId` of our EKS cluster, 4. `accountId` 
+```s
+# Install the AWS Load Balancer Controller.
+## Template
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=<cluster-name> \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=<region-code> \
+  --set vpcId=<vpc-xxxxxxxx> \
+  --set image.repository=<account>.dkr.ecr.<region-code>.amazonaws.com/amazon/aws-load-balancer-controller
+
+## Replace Cluster Name, Region Code, VPC ID, Image Repo Account ID and Region Code  
+helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=eksdemo1 \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=us-east-1 \
+  --set vpcId=vpc-0081be58f12530dba \
+  --set image.repository=602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon/aws-load-balancer-controller
+```
+
+You should see something similar to this if everything worked correctly: 
+```s
+gabrrodriguez@US-NF9V9G1605 8-ALB % helm install aws-load-balancer-controller eks/aws-load-balancer-controller \
+  -n kube-system \
+  --set clusterName=eksdemo1 \
+  --set serviceAccount.create=false \
+  --set serviceAccount.name=aws-load-balancer-controller \
+  --set region=us-east-1 \
+  --set vpcId=vpc-0081be58f12530dba \
+  --set image.repository=602401143452.dkr.ecr.us-east-1.amazonaws.com/amazon/aws-load-balancer-controller
+NAME: aws-load-balancer-controller
+LAST DEPLOYED: Mon Jan 22 10:31:10 2024
+NAMESPACE: kube-system
+STATUS: deployed
+REVISION: 1
+TEST SUITE: None
+NOTES:
+AWS Load Balancer controller installed!
+```
+
+> NOTE 1: If you're deploying the controller to Amazon EC2 nodes that have restricted access to the Amazon EC2 instance metadata service (IMDS), or if you're deploying to Fargate, then add the following flags to the command that you run:
+```s
+--set region=region-code
+--set vpcId=vpc-xxxxxxxx
+```
+
+> NOTE 2: If you're deploying to any Region other than us-west-2, then add the following flag to the command that you run, replacing account and region-code with the values for your region listed in Amazon EKS add-on container image addresses. [Get Region & Account Info](https://docs.aws.amazon.com/eks/latest/userguide/add-ons-images.html)
+
+```s
+--set image.repository=account.dkr.ecr.region-code.amazonaws.com/amazon/aws-load-balancer-controller
+```
+
+5c. Verify that the installation is complete with `kubectl`
+
+```s
+# Verify that the controller is installed.
+kubectl -n kube-system get deployment 
+kubectl -n kube-system get deployment aws-load-balancer-controller
+kubectl -n kube-system describe deployment aws-load-balancer-controller
+```
+
+5d. Verify that AWS Load Balancer Controller Webhook Service is Created 
+
+```s
+kubectl -n kube-system get svc 
+kubectl -n kube-system get svc aws-load-balancer-webhook-service
+kubectl -n kube-system describe svc aws-load-balancer-webhook-service
+```
+
+5e. Verify labels in Service and Selector labels are in Deployment 
+```s
+kubectl -n kube-system get svc aws-load-balancer-webhook-service -o yaml
+kubectl -n kube-system get deployment aws-load-balancer-controller -o yaml
+```
+
+Validation Steps: 
+1. Verify `spec.selector` label in `aws-load-balancer-webhook-service`
+2. Compare it with `aws-load-balancer-controller` Deployment `spec.selector.matchLabels`
+3. Both values should be same which traffic coming to `aws-load-balancer-webhook-service` on port 443 will be sent to port 9443 on `aws-load-balancer-controller` deployment related pods. 
+
+5f. Verify AWS Load Balancer Controller Logs
+
+```s
+# List Pods
+kubectl get pods -n kube-system
+
+# Review logs for AWS LB Controller POD-1
+kubectl -n kube-system logs -f <POD-NAME> 
+kubectl -n kube-system logs -f  aws-load-balancer-controller-86b598cbd6-5pjfk
+
+# Review logs for AWS LB Controller POD-2
+kubectl -n kube-system logs -f <POD-NAME> 
+kubectl -n kube-system logs -f aws-load-balancer-controller-86b598cbd6-vqqsk
+```
+
+5g. Verify AWS Load Balancer Controller k8 Service Account - Internals
+
+```s
+# List Service Account and its secret
+kubectl -n kube-system get sa aws-load-balancer-controller
+kubectl -n kube-system get sa aws-load-balancer-controller -o yaml
+kubectl -n kube-system get secret <GET_FROM_PREVIOUS_COMMAND - secrets.name> -o yaml
+kubectl -n kube-system get secret aws-load-balancer-controller-token-5w8th 
+kubectl -n kube-system get secret aws-load-balancer-controller-token-5w8th -o yaml
+```
